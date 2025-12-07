@@ -3,8 +3,17 @@ async function showReport() {
   const report = document.getElementById("report");
 
   for (let [site, milliseconds] of Object.entries(data)) {
-    const minutes = Math.round(milliseconds / 60000);
-    report.innerHTML += `<div class="site">${site}: ${minutes} minutes</div>`;
+    const seconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+
+    const displayHours = hours;
+    const displayMinutes = minutes % 60;
+    const displaySeconds = seconds % 60;
+
+    const timeString = `${displayHours}h ${displayMinutes}m ${displaySeconds}s`;
+
+    report.innerHTML += `<div class="site">${site}: ${timeString}</div>`;
   }
 }
 
