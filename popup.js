@@ -1,38 +1,53 @@
-async function showReport() {
+let updateInterval;
+
+updateUI();
+updateInterval = setInterval(updateUI, 1000);
+
+window.addEventListener("unload", () => clearInterval(updateInterval));
+
+async function updateUI() {
   const data = await browser.storage.local.get();
   const report = document.getElementById("report");
-  report.innerHTML = "";
+  const totalTimeEl = document.getElementById("totalTime");
 
-  const entries = Object.entries(data).sort((a, b) => b[1] - a[1]);
-
+  const entries = Object.entries(data);
   if (entries.length === 0) {
-    report.innerHTML = '<div style="padding:20px; text-align:center; color:#888">No data yet.</div>';
+    report.innerHTML = '<div class="empty-state">No activity tracked yet.<br>Start browsing to see data.</div>';
+    totalTimeEl.textContent = "0s";
     return;
   }
 
   const totalTime = entries.reduce((sum, entry) => sum + entry[1], 0);
+  totalTimeEl.textContent = formatDuration(totalTime);
 
-  const fragment = document.createDocumentFragment();
-
-  for (let [site, milliseconds] of entries) {
-    const row = document.createElement("div");
-    row.className = "site-row";
+  entries.forEach(([site, milliseconds]) => {
+    const rowId = "row-" + site.replace(/[^a-zA-Z0-9]/g, "-");
+    let row = document.getElementById(rowId);
 
     const percent = Math.max(1, (milliseconds / totalTime) * 100);
+    const timeString = formatDuration(milliseconds);
 
-    const iconUrl = `https://www.google.com/s2/favicons?domain=${site}&sz=32`;
+    if (row) {
+      row.querySelector(".time").textContent = timeString;
+      row.querySelector(".progress-bg").style.width = `${percent}%`;
+      row.style.order = -milliseconds;
+    } else {
+      row = document.createElement("div");
+      row.className = "site-row";
+      row.id = rowId;
+      row.style.order = -milliseconds;
 
-    row.innerHTML = `
-      <div class="progress-bg" style="width: ${percent}%"></div>
-      <img class="favicon" src="${iconUrl}" />
-      <div class="domain" title="${site}">${site}</div>
-      <div class="time">${formatDuration(milliseconds)}</div>
-    `;
+      const iconUrl = `https://www.google.com/s2/favicons?domain=${site}&sz=32`;
 
-    fragment.appendChild(row);
-  }
-
-  report.appendChild(fragment);
+      row.innerHTML = `
+        <div class="progress-bg" style="width: ${percent}%"></div>
+        <img class="favicon" src="${iconUrl}" onerror="this.style.opacity='0.3'" />
+        <div class="domain" title="${site}">${site}</div>
+        <div class="time">${timeString}</div>
+      `;
+      report.appendChild(row);
+    }
+  });
 }
 
 function formatDuration(ms) {
@@ -42,12 +57,14 @@ function formatDuration(ms) {
   const pad = (n) => n.toString().padStart(2, "0");
 
   if (h > 0) return `${h}h ${pad(m % 60)}m`;
-  return `${pad(m % 60)}m ${pad(s % 60)}s`;
+  if (m > 0) return `${pad(m)}m ${pad(s % 60)}s`;
+  return `${pad(s)}s`;
 }
 
 document.getElementById("clear").addEventListener("click", async () => {
-  await browser.storage.local.clear();
-  showReport();
+  if (confirm("Clear all tracking data?")) {
+    await browser.storage.local.clear();
+    document.getElementById("report").innerHTML = ""; // Clear DOM immediately
+    updateUI();
+  }
 });
-
-showReport();

@@ -3,40 +3,100 @@
 <head>
   <meta charset="utf-8">
   <style>
-  body {
-    width: 340px;
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    color: #333;
+  * {
+    box-sizing: border-box;
   }
 
-  h3 { padding: 15px; margin: 0; border-bottom: 1px solid #eee; font-size: 15px; }
+  body {
+    width: 360px;
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #1a1a1a;
+    background: #fafafa;
+  }
 
-  #report { max-height: 450px; overflow-y: auto; }
+  header {
+    background: #fff;
+    border-bottom: 1px solid #e5e5e5;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
 
-  .site-row {
-    position: relative; 
+  h3 { 
+    padding: 16px 16px 14px;
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
     display: flex;
     align-items: center;
-    padding: 10px 15px;
+    justify-content: space-between;
+  }
+
+  .total-time {
+    font-size: 12px;
+    color: #666;
+    font-weight: 500;
+    font-family: "Menlo", "Consolas", monospace;
+  }
+
+  #report { 
+    max-height: 450px;
+    overflow-y: auto;
+    background: #fff;
+  }
+
+  #report::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  #report::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  #report::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 3px;
+  }
+
+  #report::-webkit-scrollbar-thumb:hover {
+    background: #bbb;
+  }
+
+  .site-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
     border-bottom: 1px solid #f5f5f5;
-    background: #fff; 
+    background: #fff;
+    transition: background 0.15s ease;
+  }
+
+  .site-row:hover {
+    background: #f9f9f9;
+  }
+
+  .site-row:last-child {
+    border-bottom: none;
   }
 
   .progress-bg {
     position: absolute;
     bottom: 0;
     left: 0;
-    height: 3px;
-    background-color: #4CAF50; 
-    opacity: 0.5;
-    transition: width 0.3s;
+    height: 2px;
+    background: linear-gradient(90deg, #4CAF50 0%, #45a049 100%);
+    transition: width 0.4s ease;
   }
 
   .favicon {
-    width: 16px;
-    height: 16px;
-    margin-right: 10px;
+    width: 18px;
+    height: 18px;
+    margin-right: 12px;
+    flex-shrink: 0;
+    border-radius: 2px;
   }
 
   .domain {
@@ -47,27 +107,68 @@
     white-space: nowrap;
     font-weight: 500;
     font-size: 14px;
-    margin-right: 10px;
+    margin-right: 12px;
+    color: #2a2a2a;
   }
 
   .time {
-    font-family: "Menlo", monospace;
+    font-family: "Menlo", "Consolas", monospace;
     font-size: 12px;
-    color: #666;
+    color: #555;
     background: #f0f0f0;
-    padding: 2px 6px;
-    border-radius: 4px;
+    padding: 4px 8px;
+    border-radius: 6px;
     flex-shrink: 0;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+  }
+
+  .empty-state {
+    padding: 48px 20px;
+    text-align: center;
+    color: #999;
+    font-size: 14px;
+  }
+
+  footer {
+    padding: 12px;
+    background: #fff;
+    border-top: 1px solid #e5e5e5;
+  }
+
+  button {
+    width: 100%;
+    padding: 10px;
+    background: #fff;
+    color: #d32f2f;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+
+  button:hover {
+    background: #fef5f5;
+    border-color: #d32f2f;
+  }
+
+  button:active {
+    transform: scale(0.98);
   }
 </style>
 </head>
 <body>
   <header>
-    <h3>Daily Activity</h3>
+    <h3>
+      <span>Daily Activity</span>
+      <span class="total-time" id="totalTime"></span>
+    </h3>
   </header>
   
-  <div id="report">
-    </div>
+  <div id="report"></div>
 
   <footer>
     <button id="clear">Reset All Data</button>

@@ -8,13 +8,63 @@ browser.tabs.onActivated.addListener(async (activeInfo) => {
 });
 
 async function saveCurrentTime() {
-  if (currentTab && startTime) {
-    const timeSpent = Date.now() - startTime;
-    const domain = new URL(currentTab.url).hostname;
+  if (!startTime) return;
 
-    let data = await browser.storage.local.get(domain);
-    let totalTime = (data[domain] || 0) + timeSpent;
+  const timeSpent = Date.now() - startTime;
 
-    await browser.storage.local.set({ [domain]: totalTime });
+  if (timeSpent < 1000) return;
+
+  let domain;
+
+  if (currentTab && currentTab.url) {
+    domain = getDomainName(currentTab.url);
+  } else {
+    domain = "[System]: Browser/Window Focus Change";
+  }
+
+  let data = await browser.storage.local.get(domain);
+  let totalTime = (data[domain] || 0) + timeSpent;
+
+  await browser.storage.local.set({ [domain]: totalTime });
+}
+browser.windows.onFocusChanged.addListener(async (windowId) => {
+  await saveCurrentTime();
+
+  if (windowId === browser.windows.WINDOW_ID_NONE) {
+    currentTab = null;
+    startTime = null;
+  } else {
+    let tabs = await browser.tabs.query({ active: true, windowId: windowId });
+    if (tabs.length > 0) {
+      currentTab = tabs[0];
+      startTime = Date.now();
+    }
+  }
+});
+function getDomainName(url) {
+  console.log(url);
+  if (!url || url === "about:blank") return "Empty / New Tab";
+
+  if (url.startsWith("about:")) {
+    const part = url.split(":")[1].split(/[#?]/)[0];
+    return `Firefox: ${part}`;
+  }
+
+  if (url.startsWith("moz-extension://")) {
+    return "Firefox Extension";
+  }
+
+  if (url.startsWith("file:///")) {
+    return "Local File";
+  }
+
+  try {
+    const urlObj = new URL(url);
+    if (urlObj.hostname) {
+      return urlObj.hostname;
+    }
+    return `[Non-Standard]: ${urlObj.protocol}`;
+  } catch (e) {
+    return `[Parse Error]: ${url.substring(0, 50)}`;
   }
 }
