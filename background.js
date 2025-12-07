@@ -68,3 +68,14 @@ function getDomainName(url) {
     return `[Parse Error]: ${url.substring(0, 50)}`;
   }
 }
+
+browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "getLiveStatus" && startTime && currentTab) {
+    const currentElapsedTime = Date.now() - startTime;
+    const domain = getDomainName(currentTab.url);
+
+    sendResponse({ domain: domain, timeAdded: currentElapsedTime });
+  } else {
+    sendResponse({});
+  }
+});

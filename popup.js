@@ -7,6 +7,17 @@ window.addEventListener("unload", () => clearInterval(updateInterval));
 
 async function updateUI() {
   const data = await browser.storage.local.get();
+
+  try {
+    const liveData = await browser.runtime.sendMessage({ action: "getLiveStatus" });
+
+    if (liveData && liveData.domain) {
+      const currentTotal = data[liveData.domain] || 0;
+      data[liveData.domain] = currentTotal + liveData.timeAdded;
+    }
+  } catch (error) {
+    console.log("Could not fetch live data");
+  }
   const report = document.getElementById("report");
   const totalTimeEl = document.getElementById("totalTime");
 
@@ -64,7 +75,7 @@ function formatDuration(ms) {
 document.getElementById("clear").addEventListener("click", async () => {
   if (confirm("Clear all tracking data?")) {
     await browser.storage.local.clear();
-    document.getElementById("report").innerHTML = ""; // Clear DOM immediately
+    document.getElementById("report").innerHTML = "";
     updateUI();
   }
 });
