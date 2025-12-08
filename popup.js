@@ -9,32 +9,32 @@ class PopupUI {
     start() {
         this.update();
         this.interval = setInterval(() => this.update(), 1000);
-
         window.addEventListener("unload", () => clearInterval(this.interval));
         this.clearBtn.addEventListener("click", () => this.handleClear());
     }
 
     async update() {
         const data = await browser.storage.local.get();
+        let activeDomain = null;
 
         try {
             const live = await browser.runtime.sendMessage({ action: "getLiveStatus" });
             if (live?.domain) {
                 data[live.domain] = (data[live.domain] || 0) + live.timeAdded;
+                activeDomain = live.domain; // Capture currently active domain
             }
         } catch (e) {
-            // Live data fetch failed, likely popup closed too fast or bg inactive
+            // connection failed
         }
 
-        this.render(data);
+        this.render(data, activeDomain);
     }
 
-    render(data) {
+    render(data, activeDomain) {
         const entries = Object.entries(data);
 
         if (entries.length === 0) {
-            this.report.innerHTML =
-                '<div class="empty-state">No activity tracked yet.<br>Start browsing to see data.</div>';
+            this.report.innerHTML = '<div class="empty-state">No activity tracked yet.<br>Start browsing.</div>';
             this.totalEl.textContent = "0s";
             return;
         }
@@ -42,7 +42,6 @@ class PopupUI {
         const totalMs = entries.reduce((sum, [, ms]) => sum + ms, 0);
         this.totalEl.textContent = Utils.formatTime(totalMs);
 
-        // Capture old positions for animation
         const positions = new Map();
         this.report.querySelectorAll(".site-row").forEach((r) => positions.set(r.id, r.getBoundingClientRect().top));
 
@@ -50,36 +49,42 @@ class PopupUI {
             .sort((a, b) => b[1] - a[1])
             .forEach(([site, ms]) => {
                 const pct = Math.max(1, (ms / totalMs) * 100);
-                this.upsertRow(site, ms, pct);
+                this.upsertRow(site, ms, pct, site === activeDomain);
             });
 
         this.animateReorder(positions);
     }
 
-    upsertRow(site, ms, pct) {
+    upsertRow(site, ms, pct, isActive) {
         const id = "row-" + site.replace(/[^a-zA-Z0-9]/g, "-");
         let row = document.getElementById(id);
         const timeStr = Utils.formatTime(ms);
 
-        if (row) {
-            row.querySelector(".time").textContent = timeStr;
-            row.querySelector(".progress-bg").style.width = `${pct}%`;
-            row.style.order = -ms;
-        } else {
+        if (!row) {
             row = document.createElement("div");
             row.className = "site-row";
             row.id = id;
-            row.style.order = -ms;
 
             const iconHtml = Utils.getIconHtml(site);
 
             row.innerHTML = `
-                <div class="progress-bg" style="width: ${pct}%"></div>
+                <div class="progress-bg"></div>
                 ${iconHtml}
+                <div class="live-indicator"></div>
                 <div class="domain" title="${site}">${site}</div>
-                <div class="time">${timeStr}</div>
+                <div class="time"></div>
             `;
             this.report.appendChild(row);
+        }
+
+        row.querySelector(".time").textContent = timeStr;
+        row.querySelector(".progress-bg").style.width = `${pct}%`;
+        row.style.order = -ms;
+
+        if (isActive) {
+            row.classList.add("active-row");
+        } else {
+            row.classList.remove("active-row");
         }
     }
 
@@ -93,9 +98,7 @@ class PopupUI {
                     const delta = oldTop - newTop;
                     row.style.transform = `translateY(${delta}px)`;
                     row.style.transition = "none";
-
-                    row.offsetHeight; // Force reflow
-
+                    row.offsetHeight;
                     row.style.transition = "transform 0.5s ease, background 0.15s ease";
                     row.style.transform = "";
                 }
@@ -104,7 +107,7 @@ class PopupUI {
     }
 
     async handleClear() {
-        if (confirm("Clear all tracking data?")) {
+        if (confirm("Reset data?")) {
             await browser.storage.local.clear();
             this.report.innerHTML = "";
             this.update();
