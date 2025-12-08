@@ -30,7 +30,9 @@ async function updateUI() {
 
     const totalTime = entries.reduce((sum, entry) => sum + entry[1], 0);
     totalTimeEl.textContent = formatDuration(totalTime);
-
+    const positions = new Map();
+    const rows = report.querySelectorAll(".site-row");
+    rows.forEach((row) => positions.set(row.id, row.getBoundingClientRect().top));
     entries
         .toSorted((a, b) => b[1] - a[1])
         .forEach(([site, milliseconds]) => {
@@ -67,6 +69,25 @@ async function updateUI() {
                 report.appendChild(row);
             }
         });
+    requestAnimationFrame(() => {
+        const newRows = report.querySelectorAll(".site-row");
+        newRows.forEach((row) => {
+            const oldTop = positions.get(row.id);
+            const newTop = row.getBoundingClientRect().top;
+
+            if (oldTop !== undefined && oldTop !== newTop) {
+                const delta = oldTop - newTop;
+
+                row.style.transform = `translateY(${delta}px)`;
+                row.style.transition = "none";
+
+                row.offsetHeight;
+
+                row.style.transition = "transform 0.5s ease, background 0.15s ease";
+                row.style.transform = "";
+            }
+        });
+    });
 }
 function getFallbackIcon(site) {
     const icons = {
