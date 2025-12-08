@@ -12,8 +12,6 @@ async function saveCurrentTime() {
 
   const timeSpent = Date.now() - startTime;
 
-  if (timeSpent < 1000) return;
-
   let domain;
 
   if (currentTab && currentTab.url) {
@@ -27,6 +25,7 @@ async function saveCurrentTime() {
 
   await browser.storage.local.set({ [domain]: totalTime });
 }
+
 browser.windows.onFocusChanged.addListener(async (windowId) => {
   await saveCurrentTime();
 
@@ -41,6 +40,7 @@ browser.windows.onFocusChanged.addListener(async (windowId) => {
     }
   }
 });
+
 function getDomainName(url) {
   console.log(url);
   if (!url || url === "about:blank") return "Empty / New Tab";
