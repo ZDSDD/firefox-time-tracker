@@ -3,17 +3,33 @@ class PopupUI {
         this.report = document.getElementById("report");
         this.totalEl = document.getElementById("totalTime");
         this.clearBtn = document.getElementById("clear");
+
+        // Detail View Elements
+        this.detailView = document.getElementById("detail-view");
+        this.backBtn = document.getElementById("back-btn");
+        this.saveBtn = document.getElementById("save-limit");
+        this.limitInput = document.getElementById("limit-input");
+        this.detailDomain = document.getElementById("detail-domain");
+        this.detailTime = document.getElementById("detail-time");
+
         this.interval = null;
+        this.currentSite = null;
     }
 
     start() {
         this.update();
         this.interval = setInterval(() => this.update(), 1000);
+
         window.addEventListener("unload", () => clearInterval(this.interval));
         this.clearBtn.addEventListener("click", () => this.handleClear());
+
+        if (this.backBtn) this.backBtn.addEventListener("click", () => this.closeDetail());
+        if (this.saveBtn) this.saveBtn.addEventListener("click", () => this.saveLimit());
     }
 
     async update() {
+        if (this.currentSite) return;
+
         const data = await browser.storage.local.get();
         let activeDomain = null;
 
@@ -21,7 +37,7 @@ class PopupUI {
             const live = await browser.runtime.sendMessage({ action: "getLiveStatus" });
             if (live?.domain) {
                 data[live.domain] = (data[live.domain] || 0) + live.timeAdded;
-                activeDomain = live.domain; // Capture currently active domain
+                activeDomain = live.domain;
             }
         } catch (e) {
             // connection failed
@@ -31,7 +47,9 @@ class PopupUI {
     }
 
     render(data, activeDomain) {
-        const entries = Object.entries(data);
+        // Extract limits before filtering entries
+        const limits = data.limits || {};
+        const entries = Object.entries(data).filter(([k]) => k !== "limits");
 
         if (entries.length === 0) {
             this.report.innerHTML = '<div class="empty-state">No activity tracked yet.<br>Start browsing.</div>';
@@ -49,21 +67,29 @@ class PopupUI {
             .sort((a, b) => b[1] - a[1])
             .forEach(([site, ms]) => {
                 const pct = Math.max(1, (ms / totalMs) * 100);
-                this.upsertRow(site, ms, pct, site === activeDomain);
+                // Pass the limit for this specific site
+                const limitMinutes = limits[site] || 0;
+                this.upsertRow(site, ms, pct, site === activeDomain, limitMinutes);
             });
 
         this.animateReorder(positions);
     }
 
-    upsertRow(site, ms, pct, isActive) {
+    upsertRow(site, ms, pct, isActive, limitMinutes) {
         const id = "row-" + site.replace(/[^a-zA-Z0-9]/g, "-");
         let row = document.getElementById(id);
         const timeStr = Utils.formatTime(ms);
+
+        // Check if exceeded
+        // limitMinutes is in minutes, ms is milliseconds
+        const isExceeded = limitMinutes > 0 && ms > limitMinutes * 60 * 1000;
 
         if (!row) {
             row = document.createElement("div");
             row.className = "site-row";
             row.id = id;
+
+            row.addEventListener("click", () => this.openDetail(site));
 
             const iconHtml = Utils.getIconHtml(site);
 
@@ -81,11 +107,57 @@ class PopupUI {
         row.querySelector(".progress-bg").style.width = `${pct}%`;
         row.style.order = -ms;
 
+        // Apply visual states
         if (isActive) {
             row.classList.add("active-row");
         } else {
             row.classList.remove("active-row");
         }
+
+        if (isExceeded) {
+            row.classList.add("limit-exceeded");
+        } else {
+            row.classList.remove("limit-exceeded");
+        }
+    }
+
+    async openDetail(site) {
+        if (!this.detailView) return;
+
+        this.currentSite = site;
+
+        const data = await browser.storage.local.get([site, "limits"]);
+        const ms = data[site] || 0;
+        const limits = data.limits || {};
+
+        this.detailDomain.textContent = site;
+        this.detailTime.textContent = Utils.formatTime(ms);
+        this.limitInput.value = limits[site] || "";
+
+        document.body.classList.add("viewing-details");
+    }
+
+    closeDetail() {
+        document.body.classList.remove("viewing-details");
+        this.currentSite = null;
+        this.update();
+    }
+
+    async saveLimit() {
+        if (!this.currentSite) return;
+
+        const limitVal = parseInt(this.limitInput.value);
+        const data = await browser.storage.local.get("limits");
+        const limits = data.limits || {};
+
+        if (limitVal > 0) {
+            limits[this.currentSite] = limitVal;
+        } else {
+            delete limits[this.currentSite];
+        }
+
+        await browser.storage.local.set({ limits });
+        this.closeDetail();
     }
 
     animateReorder(oldPositions) {

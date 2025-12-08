@@ -13,6 +13,8 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     color: #1a1a1a;
     background: #fafafa;
+    overflow-x: hidden; /* Important for slide effect */
+    position: relative;
   }
 
   header {
@@ -21,6 +23,8 @@
     position: sticky;
     top: 0;
     z-index: 10;
+    display: flex;
+    align-items: center;
   }
 
   h3 { 
@@ -32,6 +36,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    width: 100%;
   }
 
   .total-time {
@@ -47,25 +52,15 @@
     background: #fff;
     display: flex;
     flex-direction: column;
+    transition: transform 0.3s ease; /* Slide transition */
   }
 
-  #report::-webkit-scrollbar {
-    width: 6px;
-  }
+  #report::-webkit-scrollbar { width: 6px; }
+  #report::-webkit-scrollbar-track { background: transparent; }
+  #report::-webkit-scrollbar-thumb { background: #ddd; border-radius: 3px; }
+  #report::-webkit-scrollbar-thumb:hover { background: #bbb; }
 
-  #report::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  #report::-webkit-scrollbar-thumb {
-    background: #ddd;
-    border-radius: 3px;
-  }
-
-  #report::-webkit-scrollbar-thumb:hover {
-    background: #bbb;
-  }
-
+  /* --- Row Styles --- */
   .site-row {
     position: relative;
     display: flex;
@@ -74,15 +69,11 @@
     border-bottom: 1px solid #f5f5f5;
     background: #fff;
     transition: background 0.15s ease, transform 0.5s ease;
+    cursor: pointer; /* Clickable */
   }
 
-  .site-row:hover {
-    background: #f9f9f9;
-  }
-
-  .site-row:last-child {
-    border-bottom: none;
-  }
+  .site-row:hover { background: #f9f9f9; }
+  .site-row:last-child { border-bottom: none; }
 
   .progress-bg {
     position: absolute;
@@ -94,128 +85,63 @@
   }
 
   .favicon {
-    width: 18px;
-    height: 18px;
-    margin-right: 12px;
-    flex-shrink: 0;
-    border-radius: 2px;
+    width: 18px; height: 18px; margin-right: 12px; flex-shrink: 0; border-radius: 2px;
   }
 
   .domain {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-weight: 500;
-    font-size: 14px;
-    margin-right: 12px;
-    color: #2a2a2a;
+    flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-weight: 500; font-size: 14px; margin-right: 12px; color: #2a2a2a;
   }
 
   .time {
-    font-family: "Menlo", "Consolas", monospace;
-    font-size: 12px;
-    color: #555;
-    background: #f0f0f0;
-    padding: 4px 8px;
-    border-radius: 6px;
-    flex-shrink: 0;
-    font-weight: 500;
-    letter-spacing: 0.3px;
+    font-family: "Menlo", "Consolas", monospace; font-size: 12px; color: #555;
+    background: #f0f0f0; padding: 4px 8px; border-radius: 6px; flex-shrink: 0;
+    font-weight: 500; letter-spacing: 0.3px;
   }
 
   .empty-state {
-    padding: 48px 20px;
-    text-align: center;
-    color: #999;
-    font-size: 14px;
+    padding: 48px 20px; text-align: center; color: #999; font-size: 14px;
   }
 
   footer {
-    padding: 12px;
-    background: #fff;
-    border-top: 1px solid #e5e5e5;
+    padding: 12px; background: #fff; border-top: 1px solid #e5e5e5;
   }
 
   button {
-    width: 100%;
-    padding: 10px;
-    background: #fff;
-    color: #d32f2f;
-    border: 1.5px solid #e5e5e5;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 600;
-    transition: all 0.2s ease;
-    font-family: inherit;
+    width: 100%; padding: 10px; background: #fff; color: #d32f2f;
+    border: 1.5px solid #e5e5e5; border-radius: 8px; cursor: pointer;
+    font-size: 13px; font-weight: 600; transition: all 0.2s ease; font-family: inherit;
   }
 
-  button:hover {
-    background: #fef5f5;
-    border-color: #d32f2f;
-  }
-
-  button:active {
-    transform: scale(0.98);
-  }
+  button:hover { background: #fef5f5; border-color: #d32f2f; }
+  button:active { transform: scale(0.98); }
 
   .default-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f0f0f0;
-    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    background: #f0f0f0; border-radius: 4px;
   }
-  
-  .default-icon svg {
-    width: 12px;
-    height: 12px;
-    fill: #666;
-  }
+  .default-icon svg { width: 12px; height: 12px; fill: #666; }
 
+  /* --- Visual Indicators --- */
   .live-indicator {
-    width: 6px;
-    height: 6px;
-    background-color: #ff4444;
-    border-radius: 50%;
-    margin-right: 8px;
-    box-shadow: 0 0 4px rgba(255, 68, 68, 0.6);
-    animation: blink 1.5s ease-in-out infinite;
-    display: none; 
+    width: 6px; height: 6px; background-color: #ff4444; border-radius: 50%;
+    margin-right: 8px; box-shadow: 0 0 4px rgba(255, 68, 68, 0.6);
+    animation: blink 1.5s ease-in-out infinite; display: none; 
   }
 
-  .site-row.active-row {
-    background: #f0fdf4;
-  }
-
-  .site-row.active-row .live-indicator {
-    display: inline-block;
-  }
+  .site-row.active-row { background: #f0fdf4; }
+  .site-row.active-row .live-indicator { display: inline-block; }
 
   .site-row.active-row .time {
-    background: #ffffff;
-    color: #2e7d32;
-    border: 1px solid #a5d6a7;
-    font-weight: 700;
-    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+    background: #ffffff; color: #2e7d32; border: 1px solid #a5d6a7;
+    font-weight: 700; box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
     animation: pulse-green 2s infinite;
   }
 
   @keyframes pulse-green {
-    0% {
-      transform: scale(0.95);
-      box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
-    }
-    70% {
-      transform: scale(1);
-      box-shadow: 0 0 0 6px rgba(76, 175, 80, 0);
-    }
-    100% {
-      transform: scale(0.95);
-      box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
-    }
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(76, 175, 80, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
   }
 
   @keyframes blink {
@@ -223,9 +149,69 @@
     50% { opacity: 0.4; }
   }
 
+  /* --- Slide-Over Detail View --- */
+  #detail-view {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: #fafafa;
+    transform: translateX(100%); /* Hidden off-screen */
+    transition: transform 0.3s ease;
+    z-index: 20; display: flex; flex-direction: column;
+  }
+
+  /* Slide logic */
+  body.viewing-details #report { transform: translateX(-30%); }
+  body.viewing-details #detail-view { transform: translateX(0); }
+
+  .settings-content { padding: 20px; }
+  
+  .stat-card {
+    background: white; padding: 20px; border-radius: 8px; 
+    border: 1px solid #eee; margin-bottom: 20px; text-align: center;
+  }
+  
+  .big-text {
+    font-size: 24px; font-weight: 700; color: #2a2a2a; 
+    font-family: "Menlo", monospace; margin-top: 5px;
+  }
+
+  .control-group {
+    margin-bottom: 20px; background: white; padding: 15px; 
+    border-radius: 8px; border: 1px solid #eee;
+  }
+  
+  .control-group label {
+    display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: #666;
+  }
+  
+  input {
+    width: 100%; padding: 8px; border: 1px solid #ddd; 
+    border-radius: 4px; font-size: 16px; box-sizing: border-box;
+  }
+
+  .primary-btn {
+    background: #2a2a2a; color: white; border: none; width: 100%; 
+    padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer;
+  }
+  .primary-btn:hover { background: #000; border-color: #000; }
+
+  #back-btn {
+    background: none; border: none; color: #666; font-size: 14px; 
+    cursor: pointer; padding: 8px; width: auto; margin-left: 8px;
+  }
+  #back-btn:hover { color: #2a2a2a; background: none; }
+/* Limit Exceeded State */
+  .site-row.limit-exceeded .progress-bg {
+    background: #ff4444; /* Bright red bar */
+  }
+  
+  .site-row.limit-exceeded .time {
+    color: #d32f2f;
+    font-weight: 700;
+  }
 </style>
 </head>
 <body>
+  
   <header>
     <h3>
       <span>Daily Activity</span>
@@ -238,6 +224,29 @@
   <footer>
     <button id="clear">Reset All Data</button>
   </footer>
+
+  <div id="detail-view">
+    <header>
+      <button id="back-btn">← Back</button>
+      <h3 id="detail-domain" style="padding: 16px 0; justify-content: center; margin-right: 50px;">
+        example.com
+      </h3>
+    </header>
+    
+    <div class="settings-content">
+      <div class="stat-card">
+        <label>Time Today</label>
+        <div id="detail-time" class="big-text">0h 00m</div>
+      </div>
+
+      <div class="control-group">
+        <label>Daily Limit (minutes)</label>
+        <input type="number" id="limit-input" min="1" placeholder="e.g. 30">
+      </div>
+
+      <button id="save-limit" class="primary-btn">Save Limit</button>
+    </div>
+  </div>
 
   <script src="popup.js"></script>
 </body>
