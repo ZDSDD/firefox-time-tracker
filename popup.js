@@ -28,8 +28,6 @@ class PopupUI {
     }
 
     async update() {
-        if (this.currentSite) return;
-
         const data = await browser.storage.local.get();
         let activeDomain = null;
 
@@ -39,15 +37,18 @@ class PopupUI {
                 data[live.domain] = (data[live.domain] || 0) + live.timeAdded;
                 activeDomain = live.domain;
             }
-        } catch (e) {
-            // connection failed
+        } catch (e) {}
+
+        if (this.currentSite) {
+            const ms = data[this.currentSite] || 0;
+            this.detailTime.textContent = Utils.formatTime(ms);
+            return;
         }
 
         this.render(data, activeDomain);
     }
 
     render(data, activeDomain) {
-        // Extract limits before filtering entries
         const limits = data.limits || {};
         const entries = Object.entries(data).filter(([k]) => k !== "limits");
 
@@ -67,7 +68,6 @@ class PopupUI {
             .sort((a, b) => b[1] - a[1])
             .forEach(([site, ms]) => {
                 const pct = Math.max(1, (ms / totalMs) * 100);
-                // Pass the limit for this specific site
                 const limitMinutes = limits[site] || 0;
                 this.upsertRow(site, ms, pct, site === activeDomain, limitMinutes);
             });
@@ -80,8 +80,7 @@ class PopupUI {
         let row = document.getElementById(id);
         const timeStr = Utils.formatTime(ms);
 
-        // Check if exceeded
-        // limitMinutes is in minutes, ms is milliseconds
+        // Check if exceeded (limitMinutes is in minutes)
         const isExceeded = limitMinutes > 0 && ms > limitMinutes * 60 * 1000;
 
         if (!row) {
@@ -107,7 +106,6 @@ class PopupUI {
         row.querySelector(".progress-bg").style.width = `${pct}%`;
         row.style.order = -ms;
 
-        // Apply visual states
         if (isActive) {
             row.classList.add("active-row");
         } else {
@@ -140,7 +138,7 @@ class PopupUI {
     closeDetail() {
         document.body.classList.remove("viewing-details");
         this.currentSite = null;
-        this.update();
+        this.update(); // Trigger immediate update to refresh main list
     }
 
     async saveLimit() {
