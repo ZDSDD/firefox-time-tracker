@@ -48,6 +48,7 @@ class PopupUI {
 
         this.render(data, activeDomain);
     }
+    // small change 2
 
     render(data, activeDomain) {
         const limits = data.limits || {};
