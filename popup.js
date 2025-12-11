@@ -121,7 +121,7 @@ class PopupUI {
 
     async openDetail(site) {
         if (!this.detailView) return;
-
+        this.update();
         this.currentSite = site;
 
         const data = await browser.storage.local.get([site, "limits"]);
@@ -138,7 +138,7 @@ class PopupUI {
     closeDetail() {
         document.body.classList.remove("viewing-details");
         this.currentSite = null;
-        this.update(); // Trigger immediate update to refresh main list
+        this.update();
     }
 
     async saveLimit() {
