@@ -157,8 +157,7 @@ class PopupUI {
 
         if (this.blockCheck.checked) {
             blocking[this.currentSite] = true;
-        }
-        {
+        } else {
             delete blocking[this.currentSite];
         }
 
