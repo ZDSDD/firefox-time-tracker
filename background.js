@@ -3,6 +3,7 @@ class TimeTracker {
         this.currentTab = null;
         this.startTime = null;
         this.storage = browser.storage.local;
+        this.blockUrl = browser.runtime.getURL("blocked.html");
     }
 
     init() {
@@ -10,13 +11,43 @@ class TimeTracker {
         browser.windows.onFocusChanged.addListener((winId) => this.handleWindowFocus(winId));
         browser.tabs.onUpdated.addListener((tabId, info, tab) => this.handleUrlUpdate(tabId, info, tab));
         browser.runtime.onMessage.addListener((req, sender, sendRes) => this.handleMessage(req, sendRes));
+
+        setInterval(() => this.checkActiveTabLimit(), 5000);
     }
 
+    async checkActiveTabLimit() {
+        if (this.currentTab) {
+            await this.checkAndBlock(this.currentTab);
+        }
+    }
+    async checkAndBlock(tab) {
+        if (!tab || !tab.url || tab.url.startsWith("about:") || tab.url.startsWith("moz-extension:")) return;
+
+        const domain = this.getDomainName(tab.url);
+        const data = await this.storage.get([domain, "limits", "blocking"]);
+
+        const timeSpent = data[domain] || 0;
+        const limitMins = data.limits ? data.limits[domain] : 0;
+        const shouldBlock = data.blocking ? data.blocking[domain] : false;
+
+        // Calculate if current session pushes them over
+        let sessionTime = 0;
+        if (this.currentTab && this.currentTab.id === tab.id && this.startTime) {
+            sessionTime = Date.now() - this.startTime;
+        }
+
+        const totalTime = timeSpent + sessionTime;
+
+        if (shouldBlock && limitMins > 0 && totalTime > limitMins * 60 * 1000) {
+            browser.tabs.update(tab.id, { url: this.blockUrl });
+        }
+    }
     async handleTabChange(tabId) {
         await this.saveCurrentTime();
         try {
             this.currentTab = await browser.tabs.get(tabId);
             this.startTime = Date.now();
+            await this.checkAndBlock(this.currentTab);
         } catch (e) {
             this.currentTab = null;
         }
@@ -42,6 +73,7 @@ class TimeTracker {
             await this.saveCurrentTime();
             this.currentTab = tab;
             this.startTime = Date.now();
+            await this.checkAndBlock(tab);
         }
     }
 
