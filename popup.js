@@ -9,6 +9,7 @@ class PopupUI {
         this.backBtn = document.getElementById("back-btn");
         this.saveBtn = document.getElementById("save-limit");
         this.limitInput = document.getElementById("limit-input");
+        this.blockCheck = document.getElementById("block-check");
         this.detailDomain = document.getElementById("detail-domain");
         this.detailTime = document.getElementById("detail-time");
 
@@ -121,32 +122,32 @@ class PopupUI {
 
     async openDetail(site) {
         if (!this.detailView) return;
-
+        this.update();
         this.currentSite = site;
-
-        const data = await browser.storage.local.get([site, "limits"]);
+        const data = await browser.storage.local.get([site, "limits", "blocking"]);
         const ms = data[site] || 0;
         const limits = data.limits || {};
-
         this.detailDomain.textContent = site;
+        const blocking = data.blocking || {};
         this.detailTime.textContent = Utils.formatTime(ms);
         this.limitInput.value = limits[site] || "";
-
+        this.blockCheck.checked = !!blocking[site];
         document.body.classList.add("viewing-details");
     }
 
     closeDetail() {
         document.body.classList.remove("viewing-details");
         this.currentSite = null;
-        this.update(); // Trigger immediate update to refresh main list
+        this.update();
     }
 
     async saveLimit() {
         if (!this.currentSite) return;
 
         const limitVal = parseInt(this.limitInput.value);
-        const data = await browser.storage.local.get("limits");
+        const data = await browser.storage.local.get(["limits", "blocking"]);
         const limits = data.limits || {};
+        const blocking = data.blocking || {};
 
         if (limitVal > 0) {
             limits[this.currentSite] = limitVal;
@@ -154,7 +155,14 @@ class PopupUI {
             delete limits[this.currentSite];
         }
 
-        await browser.storage.local.set({ limits });
+        if (this.blockCheck.checked) {
+            blocking[this.currentSite] = true;
+        }
+        {
+            delete blocking[this.currentSite];
+        }
+
+        await browser.storage.local.set({ limits, blocking });
         this.closeDetail();
     }
 
