@@ -9,14 +9,16 @@
 
   body {
     width: 360px;
+    height: 600px;
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     color: #1a1a1a;
     background: #fafafa;
-    overflow-x: hidden; /* Important for slide effect */
+    overflow-x: hidden;
     position: relative;
+    display: flex; 
+    flex-direction: column; 
   }
-
   header {
     background: #fff;
     border-bottom: 1px solid #e5e5e5;
@@ -46,13 +48,14 @@
     font-family: "Menlo", "Consolas", monospace;
   }
 
-  #report { 
-    max-height: 450px;
+#report { 
+    /* max-height: 450px;*/
+    flex: 1;
     overflow-y: auto;
     background: #fff;
     display: flex;
     flex-direction: column;
-    transition: transform 0.3s ease; /* Slide transition */
+    transition: transform 0.3s ease;
   }
 
   #report::-webkit-scrollbar { width: 6px; }

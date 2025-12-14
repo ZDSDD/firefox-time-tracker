@@ -20,17 +20,45 @@ class TimeTracker {
             await this.checkAndBlock(this.currentTab);
         }
     }
+
+    getTodayKey() {
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+    }
+
+    async saveCurrentTime() {
+        if (!this.startTime || !this.currentTab) return;
+
+        const duration = Date.now() - this.startTime;
+        const domain = this.getDomainName(this.currentTab.url);
+        const today = this.getTodayKey();
+
+        const data = await this.storage.get(today);
+        const dailyData = data[today] || {};
+
+        const newTotal = (dailyData[domain] || 0) + duration;
+        dailyData[domain] = newTotal;
+
+        await this.storage.set({ [today]: dailyData });
+    }
+
     async checkAndBlock(tab) {
         if (!tab || !tab.url || tab.url.startsWith("about:") || tab.url.startsWith("moz-extension:")) return;
 
         const domain = this.getDomainName(tab.url);
-        const data = await this.storage.get([domain, "limits", "blocking"]);
+        const today = this.getTodayKey();
 
-        const timeSpent = data[domain] || 0;
+        const data = await this.storage.get([today, "limits", "blocking"]);
+
+        const dailyData = data[today] || {};
+        const timeSpent = dailyData[domain] || 0;
+
         const limitMins = data.limits ? data.limits[domain] : 0;
         const shouldBlock = data.blocking ? data.blocking[domain] : false;
 
-        // Calculate if current session pushes them over
         let sessionTime = 0;
         if (this.currentTab && this.currentTab.id === tab.id && this.startTime) {
             sessionTime = Date.now() - this.startTime;
@@ -86,18 +114,6 @@ class TimeTracker {
         } else {
             sendResponse({});
         }
-    }
-
-    async saveCurrentTime() {
-        if (!this.startTime || !this.currentTab) return;
-
-        const duration = Date.now() - this.startTime;
-        const domain = this.getDomainName(this.currentTab.url);
-
-        const data = await this.storage.get(domain);
-        const newTotal = (data[domain] || 0) + duration;
-
-        await this.storage.set({ [domain]: newTotal });
     }
 
     getDomainName(url) {

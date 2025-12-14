@@ -29,26 +29,38 @@ class PopupUI {
     }
 
     async update() {
-        const data = await browser.storage.local.get();
+        const today = this.getTodayKey();
+
+        const data = await browser.storage.local.get([today, "limits"]);
+
+        const dailyUsage = data[today] || {};
+        const viewData = { ...dailyUsage, limits: data.limits };
+
         let activeDomain = null;
 
         try {
             const live = await browser.runtime.sendMessage({ action: "getLiveStatus" });
             if (live?.domain) {
-                data[live.domain] = (data[live.domain] || 0) + live.timeAdded;
+                viewData[live.domain] = (viewData[live.domain] || 0) + live.timeAdded;
                 activeDomain = live.domain;
             }
         } catch (e) {}
 
         if (this.currentSite) {
-            const ms = data[this.currentSite] || 0;
+            const ms = viewData[this.currentSite] || 0;
             this.detailTime.textContent = Utils.formatTime(ms);
             return;
         }
 
-        this.render(data, activeDomain);
+        this.render(viewData, activeDomain);
     }
-
+    getTodayKey() {
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+    }
     render(data, activeDomain) {
         const limits = data.limits || {};
         const entries = Object.entries(data).filter(([k]) => k !== "limits");
@@ -81,7 +93,6 @@ class PopupUI {
         let row = document.getElementById(id);
         const timeStr = Utils.formatTime(ms);
 
-        // Check if exceeded (limitMinutes is in minutes)
         const isExceeded = limitMinutes > 0 && ms > limitMinutes * 60 * 1000;
 
         if (!row) {
@@ -119,22 +130,26 @@ class PopupUI {
             row.classList.remove("limit-exceeded");
         }
     }
-
     async openDetail(site) {
         if (!this.detailView) return;
         this.update();
         this.currentSite = site;
-        const data = await browser.storage.local.get([site, "limits", "blocking"]);
-        const ms = data[site] || 0;
+
+        const today = this.getTodayKey();
+        const data = await browser.storage.local.get([today, "limits", "blocking"]);
+
+        const dailyData = data[today] || {};
+        const ms = dailyData[site] || 0;
+
         const limits = data.limits || {};
-        this.detailDomain.textContent = site;
         const blocking = data.blocking || {};
+
+        this.detailDomain.textContent = site;
         this.detailTime.textContent = Utils.formatTime(ms);
         this.limitInput.value = limits[site] || "";
         this.blockCheck.checked = !!blocking[site];
         document.body.classList.add("viewing-details");
     }
-
     closeDetail() {
         document.body.classList.remove("viewing-details");
         this.currentSite = null;
