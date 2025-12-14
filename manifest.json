@@ -16,5 +16,16 @@
         "default_popup": "popup.html",
         "default_title": "Time Tracker",
         "default_icon": "icon.png"
+    },
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "time-tracker@my-local-addon",
+            "strict_min_version": "140.0",
+            "data_collection_permissions": {
+                "required": [
+                    "none"
+                ]
+            }
+        }
     }
 }
