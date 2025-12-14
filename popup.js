@@ -13,6 +13,13 @@ class PopupUI {
         this.detailDomain = document.getElementById("detail-domain");
         this.detailTime = document.getElementById("detail-time");
 
+        // Reports View Elements
+        this.reportsView = document.getElementById("reports-view");
+        this.reportsBtn = document.getElementById("reports-btn");
+        this.reportsBackBtn = document.getElementById("reports-back-btn");
+        this.dailyReport = document.getElementById("daily-report");
+        this.monthlyReport = document.getElementById("monthly-report");
+
         this.interval = null;
         this.currentSite = null;
     }
@@ -26,6 +33,9 @@ class PopupUI {
 
         if (this.backBtn) this.backBtn.addEventListener("click", () => this.closeDetail());
         if (this.saveBtn) this.saveBtn.addEventListener("click", () => this.saveLimit());
+
+        if (this.reportsBtn) this.reportsBtn.addEventListener("click", () => this.openReports());
+        if (this.reportsBackBtn) this.reportsBackBtn.addEventListener("click", () => this.closeReports());
     }
 
     async update() {
@@ -54,6 +64,7 @@ class PopupUI {
 
         this.render(viewData, activeDomain);
     }
+
     getTodayKey() {
         const d = new Date();
         const year = d.getFullYear();
@@ -61,6 +72,7 @@ class PopupUI {
         const day = String(d.getDate()).padStart(2, "0");
         return `${year}-${month}-${day}`;
     }
+
     render(data, activeDomain) {
         const limits = data.limits || {};
         const entries = Object.entries(data).filter(([k]) => k !== "limits");
@@ -130,6 +142,7 @@ class PopupUI {
             row.classList.remove("limit-exceeded");
         }
     }
+
     async openDetail(site) {
         if (!this.detailView) return;
         this.update();
@@ -150,6 +163,7 @@ class PopupUI {
         this.blockCheck.checked = !!blocking[site];
         document.body.classList.add("viewing-details");
     }
+
     closeDetail() {
         document.body.classList.remove("viewing-details");
         this.currentSite = null;
@@ -178,6 +192,122 @@ class PopupUI {
 
         await browser.storage.local.set({ limits, blocking });
         this.closeDetail();
+    }
+
+    async openReports() {
+        document.body.classList.add("viewing-reports");
+        await this.loadReports();
+    }
+
+    closeReports() {
+        document.body.classList.remove("viewing-reports");
+    }
+
+    async loadReports() {
+        const allData = await browser.storage.local.get(null);
+
+        // Filter out non-date keys
+        const dateKeys = Object.keys(allData).filter((k) => /^\d{4}-\d{2}-\d{2}$/.test(k));
+
+        if (dateKeys.length === 0) {
+            this.dailyReport.innerHTML = '<div class="empty-state">No data yet</div>';
+            this.monthlyReport.innerHTML = '<div class="empty-state">No data yet</div>';
+            return;
+        }
+
+        // Sort dates newest first
+        dateKeys.sort().reverse();
+
+        const today = this.getTodayKey();
+        let liveTime = 0;
+        let liveDomain = null;
+
+        // Get current session time
+        try {
+            const live = await browser.runtime.sendMessage({ action: "getLiveStatus" });
+            if (live?.domain && live?.timeAdded) {
+                liveTime = live.timeAdded;
+                liveDomain = live.domain;
+            }
+        } catch (e) {}
+
+        // Daily report
+        let dailyHTML = "";
+        dateKeys.forEach((dateKey) => {
+            const dayData = allData[dateKey];
+            let total = Object.entries(dayData).reduce((sum, [, ms]) => sum + ms, 0);
+
+            // Add live session time to today's total
+            if (dateKey === today && liveTime > 0) {
+                total += liveTime;
+            }
+
+            if (total > 0) {
+                const formattedDate = this.formatDateKey(dateKey);
+                dailyHTML += `
+                    <div class="report-item">
+                        <span class="report-date">${formattedDate}</span>
+                        <span class="report-time">${Utils.formatTime(total)}</span>
+                    </div>
+                `;
+            }
+        });
+        this.dailyReport.innerHTML = dailyHTML || '<div class="empty-state">No data</div>';
+
+        // Monthly report
+        const monthlyData = {};
+        dateKeys.forEach((dateKey) => {
+            const monthKey = dateKey.substring(0, 7); // YYYY-MM
+            const dayData = allData[dateKey];
+            let total = Object.entries(dayData).reduce((sum, [, ms]) => sum + ms, 0);
+
+            // Add live session time to current month
+            if (dateKey === today && liveTime > 0) {
+                total += liveTime;
+            }
+
+            monthlyData[monthKey] = (monthlyData[monthKey] || 0) + total;
+        });
+
+        let monthlyHTML = "";
+        Object.keys(monthlyData)
+            .sort()
+            .reverse()
+            .forEach((monthKey) => {
+                const total = monthlyData[monthKey];
+                if (total > 0) {
+                    const formattedMonth = this.formatMonthKey(monthKey);
+                    monthlyHTML += `
+                    <div class="report-item">
+                        <span class="report-date">${formattedMonth}</span>
+                        <span class="report-time">${Utils.formatTime(total)}</span>
+                    </div>
+                `;
+                }
+            });
+        this.monthlyReport.innerHTML = monthlyHTML || '<div class="empty-state">No data</div>';
+    }
+
+    formatDateKey(dateKey) {
+        const [year, month, day] = dateKey.split("-");
+        const date = new Date(year, month - 1, day);
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        if (date.toDateString() === today.toDateString()) {
+            return "Today";
+        } else if (date.toDateString() === yesterday.toDateString()) {
+            return "Yesterday";
+        } else {
+            return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+        }
+    }
+
+    formatMonthKey(monthKey) {
+        const [year, month] = monthKey.split("-");
+        const date = new Date(year, month - 1);
+        return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
     }
 
     animateReorder(oldPositions) {
