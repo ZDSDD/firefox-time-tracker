@@ -43,6 +43,7 @@ class TimeTracker {
         dailyData[domain] = newTotal;
 
         await this.storage.set({ [today]: dailyData });
+        this.startTime = Date.now();
     }
 
     async checkAndBlock(tab) {
