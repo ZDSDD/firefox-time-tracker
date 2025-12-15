@@ -13,6 +13,7 @@ class TimeTracker {
         browser.runtime.onMessage.addListener((req, sender, sendRes) => this.handleMessage(req, sendRes));
 
         setInterval(() => this.checkActiveTabLimit(), 5000);
+        setInterval(() => this.saveCurrentTime(), 60000);
     }
 
     async checkActiveTabLimit() {
