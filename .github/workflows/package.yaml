@@ -1,0 +1,66 @@
+name: Package and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bump Version in manifest.json
+        id: version
+        run: |
+          # Read current version and bump it
+          OLD_VER=$(jq -r .version manifest.json)
+          IFS='.' read -r major minor patch <<< "$OLD_VER"
+          patch=${patch:-0}
+          
+          if [ "${{ inputs.bump }}" == "major" ]; then
+            NEW_VER="$((major + 1)).0.0"
+          elif [ "${{ inputs.bump }}" == "minor" ]; then
+            NEW_VER="$major.$((minor + 1)).0"
+          else
+            NEW_VER="$major.$minor.$((patch + 1))"
+          fi
+          
+          # Update file
+          jq --arg v "$NEW_VER" '.version = $v' manifest.json > tmp.json && mv tmp.json manifest.json
+          
+          # Configure git and push change
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git add manifest.json
+          git commit -m "Bump version to $NEW_VER"
+          git push
+          
+          # Output new version for the next step
+          echo "NEW_VER=$NEW_VER" >> $GITHUB_OUTPUT
+
+      - name: Create Zip File
+        run: |
+          # Zip everything except hidden git files and this workflow file
+          zip -r extension.zip . -x "*.git*" -x ".github/*"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.NEW_VER }}
+          name: Release v${{ steps.version.outputs.NEW_VER }}
+          files: extension.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
