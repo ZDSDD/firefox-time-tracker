@@ -71,15 +71,27 @@ class PopupUI {
         });
     }
 
+    // New helper method to determine if a domain should be visible
+    shouldShowDomain(domain, mode, list) {
+        if (mode === "all") return true;
+
+        const isInList = list.includes(domain);
+
+        if (mode === "include") return isInList;
+        if (mode === "exclude") return !isInList;
+
+        return true;
+    }
+
     async update() {
         const today = this.getTodayKey();
         const data = await browser.storage.local.get([today, "limits", "filterMode", "filterList"]);
         const dailyUsage = data[today] || {};
-        const viewData = { ...dailyUsage, limits: data.limits };
 
-        // Update filter count badge
         const filterMode = data.filterMode || "all";
         const filterList = data.filterList || [];
+
+        // Update filter count badge
         if (filterMode !== "all" && filterList.length > 0) {
             this.filterCount.textContent = filterList.length;
             this.filterCount.style.display = "inline";
@@ -87,18 +99,47 @@ class PopupUI {
             this.filterCount.style.display = "none";
         }
 
+        // Filter the dailyUsage data based on settings
+        const filteredUsage = {};
+        Object.entries(dailyUsage).forEach(([domain, time]) => {
+            if (this.shouldShowDomain(domain, filterMode, filterList)) {
+                filteredUsage[domain] = time;
+            }
+        });
+
+        const viewData = { ...filteredUsage, limits: data.limits };
+
         let activeDomain = null;
         try {
             const live = await browser.runtime.sendMessage({ action: "getLiveStatus" });
             if (live?.domain) {
-                viewData[live.domain] = (viewData[live.domain] || 0) + live.timeAdded;
-                activeDomain = live.domain;
+                // Only add live time if the domain is allowed
+                if (this.shouldShowDomain(live.domain, filterMode, filterList)) {
+                    viewData[live.domain] = (viewData[live.domain] || 0) + live.timeAdded;
+                    activeDomain = live.domain;
+                }
             }
-        } catch (e) {}
+        } catch (e) { }
 
         if (this.currentSite) {
-            const ms = viewData[this.currentSite] || 0;
-            this.detailTime.textContent = Utils.formatTime(ms);
+            // Note: We still allow showing details for a site even if it's currently excluded,
+            // so the user can change settings for it.
+            const ms = dailyUsage[this.currentSite] || 0;
+
+            // To be consistent: if the site is excluded, the list view hides it. 
+            // If the user somehow got into detail view (e.g. before excluding), 
+            // we show the raw data from storage so they can manage it.
+            let detailTotal = ms;
+
+            // Fetch live status again to ensure the detail view updates in real-time
+            try {
+                const live = await browser.runtime.sendMessage({ action: "getLiveStatus" });
+                if (live?.domain === this.currentSite) {
+                    detailTotal += live.timeAdded;
+                }
+            } catch (e) { }
+
+            this.detailTime.textContent = Utils.formatTime(detailTotal);
             return;
         }
 
@@ -147,6 +188,16 @@ class PopupUI {
                 const limitMinutes = limits[site] || 0;
                 this.upsertRow(site, ms, pct, site === activeDomain, limitMinutes);
             });
+
+        // Remove rows that are no longer in the data (e.g. just excluded)
+        this.report.querySelectorAll(".site-row").forEach(row => {
+            const siteName = row.querySelector(".domain").textContent;
+            // logic to find if siteName is in entries
+            const exists = entries.some(([site]) => site === siteName);
+            if (!exists) {
+                row.remove();
+            }
+        });
 
         this.animateReorder(positions);
     }
@@ -253,7 +304,7 @@ class PopupUI {
 
         // Handle track checkbox
         const shouldTrack = this.trackCheck.checked;
-        
+
         if (filterMode === "all") {
             // If in "track all" mode and user unchecks tracking, switch to exclude mode
             if (!shouldTrack) {
@@ -334,6 +385,9 @@ class PopupUI {
         const allData = await browser.storage.local.get(null);
         const dateKeys = Object.keys(allData).filter((k) => /^\d{4}-\d{2}-\d{2}$/.test(k));
 
+        const filterMode = allData.filterMode || "all";
+        const filterList = allData.filterList || [];
+
         const setEmpty = (element) => {
             element.textContent = "";
             const div = document.createElement("div");
@@ -355,16 +409,23 @@ class PopupUI {
         try {
             const live = await browser.runtime.sendMessage({ action: "getLiveStatus" });
             if (live?.domain && live?.timeAdded) {
-                liveTime = live.timeAdded;
+                // Ensure live time respects filter
+                if (this.shouldShowDomain(live.domain, filterMode, filterList)) {
+                    liveTime = live.timeAdded;
+                }
             }
-        } catch (e) {}
+        } catch (e) { }
 
         this.dailyReport.textContent = "";
         let hasDailyData = false;
 
         dateKeys.forEach((dateKey) => {
             const dayData = allData[dateKey];
-            let total = Object.entries(dayData).reduce((sum, [, ms]) => sum + ms, 0);
+            // Filter domains before summing
+            let total = Object.entries(dayData)
+                .filter(([domain]) => this.shouldShowDomain(domain, filterMode, filterList))
+                .reduce((sum, [, ms]) => sum + ms, 0);
+
             if (dateKey === today && liveTime > 0) total += liveTime;
 
             if (total > 0) {
@@ -378,7 +439,11 @@ class PopupUI {
         dateKeys.forEach((dateKey) => {
             const monthKey = dateKey.substring(0, 7);
             const dayData = allData[dateKey];
-            let total = Object.entries(dayData).reduce((sum, [, ms]) => sum + ms, 0);
+            // Filter domains before summing
+            let total = Object.entries(dayData)
+                .filter(([domain]) => this.shouldShowDomain(domain, filterMode, filterList))
+                .reduce((sum, [, ms]) => sum + ms, 0);
+
             if (dateKey === today && liveTime > 0) total += liveTime;
             monthlyData[monthKey] = (monthlyData[monthKey] || 0) + total;
         });
