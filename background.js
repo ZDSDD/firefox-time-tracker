@@ -36,12 +36,12 @@ class TimeTracker {
         const list = data.filterList || [];
 
         if (mode === "all") return true;
-        
+
         const isInList = list.includes(domain);
-        
+
         if (mode === "include") return isInList;
         if (mode === "exclude") return !isInList;
-        
+
         return true;
     }
 
@@ -49,7 +49,7 @@ class TimeTracker {
         if (!this.startTime || !this.currentTab) return;
 
         const domain = this.getDomainName(this.currentTab.url);
-        
+
         // Check if we should track this domain
         const shouldTrack = await this.shouldTrackDomain(domain);
         if (!shouldTrack) {
@@ -58,6 +58,9 @@ class TimeTracker {
         }
 
         const duration = Date.now() - this.startTime;
+
+        if (duration < CONFIG.MIN_VISIT_DURATION) return;
+
         const today = this.getTodayKey();
 
         const data = await this.storage.get(today);
@@ -69,7 +72,6 @@ class TimeTracker {
         await this.storage.set({ [today]: dailyData });
         this.startTime = Date.now();
     }
-
     async checkAndBlock(tab) {
         if (!tab || !tab.url || tab.url.startsWith("about:") || tab.url.startsWith("moz-extension:")) return;
 

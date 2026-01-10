@@ -9,6 +9,7 @@
     ],
     "background": {
         "scripts": [
+            "config.js",
             "background.js"
         ]
     },
