@@ -50,14 +50,16 @@ class PopupUI {
         if (this.filterBackBtn) this.filterBackBtn.addEventListener("click", () => this.closeFilters());
         if (this.saveFiltersBtn) this.saveFiltersBtn.addEventListener("click", () => this.saveFilters());
 
-        // Radio button styling
-        document.querySelectorAll('.radio-option').forEach(option => {
-            option.addEventListener('click', () => {
-                const radio = option.querySelector('input[type="radio"]');
-                radio.checked = true;
-                this.updateRadioStyles();
-            });
+        //1. Save immediately when typing in the list
+        if (this.filterList) {
+            this.filterList.addEventListener("input", () => this.saveFilters());
+        }
+
+        // 2. Save immediately when switching modes
+        document.querySelectorAll('input[name="filterMode"]').forEach(radio => {
+            radio.addEventListener("change", () => this.saveFilters());
         });
+
     }
 
     updateRadioStyles() {
@@ -71,11 +73,12 @@ class PopupUI {
         });
     }
 
-    // New helper method to determine if a domain should be visible
     shouldShowDomain(domain, mode, list) {
         if (mode === "all") return true;
 
-        const isInList = list.includes(domain);
+        const isInList = list.some(listed =>
+            domain === listed || domain.endsWith("." + listed)
+        );
 
         if (mode === "include") return isInList;
         if (mode === "exclude") return !isInList;

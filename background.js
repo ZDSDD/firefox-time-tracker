@@ -37,7 +37,10 @@ class TimeTracker {
 
         if (mode === "all") return true;
 
-        const isInList = list.includes(domain);
+        // CHANGED: Match if domain is exact OR a subdomain (e.g. ends with ".example.com")
+        const isInList = list.some(listed =>
+            domain === listed || domain.endsWith("." + listed)
+        );
 
         if (mode === "include") return isInList;
         if (mode === "exclude") return !isInList;
