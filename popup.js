@@ -583,10 +583,16 @@ class PopupUI {
     }
 
     async handleClear() {
-        if (confirm("Reset data?")) {
+        const phrase = "delete all data forever";
+        const userInput = prompt(`WARNING: This cannot be undone.\n\nTo confirm, type: "${phrase}"`);
+
+        if (userInput === phrase) {
             await browser.storage.local.clear();
             this.report.textContent = "";
             this.update();
+            this.render({ limits: {} }, null);
+        } else if (userInput !== null) {
+            alert("Incorrect phrase. Data was NOT deleted.");
         }
     }
 }
