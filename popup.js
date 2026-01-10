@@ -32,7 +32,71 @@ class PopupUI {
         this.interval = null;
         this.currentSite = null;
     }
+    // Call this inside start() to set up the new listeners
+    initFilterUI() {
+        this.domainInput = document.getElementById("domain-input");
+        this.addDomainBtn = document.getElementById("add-domain-btn");
+        this.chipContainer = document.getElementById("chip-container");
 
+        this.addDomainBtn.addEventListener("click", () => this.addDomainFromInput());
+        this.domainInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") this.addDomainFromInput();
+        });
+    }
+
+    async addDomainFromInput() {
+        const domain = this.domainInput.value.trim().toLowerCase();
+        if (!domain) return;
+
+        const data = await browser.storage.local.get("filterList");
+        const list = data.filterList || [];
+
+        if (!list.includes(domain)) {
+            list.push(domain);
+            await browser.storage.local.set({ filterList: list });
+            this.renderChips(list);
+            this.update(); // Refresh main view
+        }
+
+        this.domainInput.value = "";
+    }
+
+    async removeDomain(domain) {
+        const data = await browser.storage.local.get("filterList");
+        const list = (data.filterList || []).filter(d => d !== domain);
+
+        await browser.storage.local.set({ filterList: list });
+        this.renderChips(list);
+        this.update();
+    }
+
+    renderChips(list) {
+        this.chipContainer.innerHTML = "";
+
+        if (list.length === 0) {
+            this.chipContainer.innerHTML = '<span style="color:#999; font-size:12px; padding:4px;">No domains listed</span>';
+            return;
+        }
+
+        list.forEach(domain => {
+            const chip = document.createElement("div");
+            chip.style.cssText = "background: white; border: 1px solid #ddd; border-radius: 16px; padding: 4px 10px; font-size: 12px; display: flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);";
+
+            const text = document.createElement("span");
+            text.textContent = domain;
+
+            const delBtn = document.createElement("span");
+            delBtn.innerHTML = "&times;";
+            delBtn.style.cssText = "cursor: pointer; color: #999; font-weight: bold; font-size: 16px; line-height: 1;";
+            delBtn.onclick = () => this.removeDomain(domain);
+            delBtn.onmouseover = () => delBtn.style.color = "#d32f2f";
+            delBtn.onmouseout = () => delBtn.style.color = "#999";
+
+            chip.appendChild(text);
+            chip.appendChild(delBtn);
+            this.chipContainer.appendChild(chip);
+        });
+    }
     start() {
         this.update();
         this.interval = setInterval(() => this.update(), 1000);
@@ -49,7 +113,7 @@ class PopupUI {
         if (this.filterBtn) this.filterBtn.addEventListener("click", () => this.openFilters());
         if (this.filterBackBtn) this.filterBackBtn.addEventListener("click", () => this.closeFilters());
         if (this.saveFiltersBtn) this.saveFiltersBtn.addEventListener("click", () => this.saveFilters());
-
+        this.initFilterUI()
         //1. Save immediately when typing in the list
         if (this.filterList) {
             this.filterList.addEventListener("input", () => this.saveFilters());
@@ -367,8 +431,7 @@ class PopupUI {
         if (radio) radio.checked = true;
         this.updateRadioStyles();
 
-        // Set textarea
-        this.filterList.value = filterList.join("\n");
+        this.renderChips(filterList);
     }
 
     async saveFilters() {

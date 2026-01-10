@@ -1,507 +1,687 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-  <meta charset="utf-8">
-  <style>
-  * {
-    box-sizing: border-box;
-  }
+    <meta charset="utf-8">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
 
-  body {
-    width: 360px;
-    height: 600px;
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    color: #1a1a1a;
-    background: #fafafa;
-    overflow-x: hidden;
-    position: relative;
-    display: flex; 
-    flex-direction: column; 
-  }
-  header {
-    background: #fff;
-    border-bottom: 1px solid #e5e5e5;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-  }
+        body {
+            width: 360px;
+            height: 600px;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #1a1a1a;
+            background: #fafafa;
+            overflow-x: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
 
-  h3 { 
-    padding: 16px 16px 14px;
-    margin: 0;
-    font-size: 15px;
-    font-weight: 600;
-    letter-spacing: -0.2px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-  }
+        header {
+            background: #fff;
+            border-bottom: 1px solid #e5e5e5;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+        }
 
-  .total-time {
-    font-size: 12px;
-    color: #666;
-    font-weight: 500;
-    font-family: "Menlo", "Consolas", monospace;
-  }
+        h3 {
+            padding: 16px 16px 14px;
+            margin: 0;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: -0.2px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
 
-#report { 
-    flex: 1;
-    overflow-y: auto;
-    background: #fff;
-    display: flex;
-    flex-direction: column;
-    transition: transform 0.3s ease;
-  }
+        .total-time {
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+            font-family: "Menlo", "Consolas", monospace;
+        }
 
-  #report::-webkit-scrollbar { width: 6px; }
-  #report::-webkit-scrollbar-track { background: transparent; }
-  #report::-webkit-scrollbar-thumb { background: #ddd; border-radius: 3px; }
-  #report::-webkit-scrollbar-thumb:hover { background: #bbb; }
+        #report {
+            flex: 1;
+            overflow-y: auto;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+        }
 
-  .site-row {
-    position: relative;
-    display: flex;
-    align-items: center;
-    padding: 12px 16px;
-    border-bottom: 1px solid #f5f5f5;
-    background: #fff;
-    transition: background 0.15s ease, transform 0.5s ease;
-    cursor: pointer;
-  }
+        #report::-webkit-scrollbar {
+            width: 6px;
+        }
 
-  .site-row:hover { 
-    background: #f5f5f5; 
-    transform: translateX(5px);
-  }
-  .site-row:last-child { border-bottom: none; }
+        #report::-webkit-scrollbar-track {
+            background: transparent;
+        }
 
-  .progress-bg {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    height: 2px;
-    background: linear-gradient(90deg, #4CAF50 0%, #45a049 100%);
-    transition: width 0.4s ease;
-  }
+        #report::-webkit-scrollbar-thumb {
+            background: #ddd;
+            border-radius: 3px;
+        }
 
-  .favicon {
-    width: 18px; height: 18px; margin-right: 12px; flex-shrink: 0; border-radius: 2px;
-  }
+        #report::-webkit-scrollbar-thumb:hover {
+            background: #bbb;
+        }
 
-  .domain {
-    flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    font-weight: 500; font-size: 14px; margin-right: 12px; color: #2a2a2a;
-  }
+        .site-row {
+            position: relative;
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid #f5f5f5;
+            background: #fff;
+            transition: background 0.15s ease, transform 0.5s ease;
+            cursor: pointer;
+        }
 
-  .time {
-    font-family: "Menlo", "Consolas", monospace; font-size: 12px; color: #555;
-    background: #f0f0f0; padding: 4px 8px; border-radius: 6px; flex-shrink: 0;
-    font-weight: 500; letter-spacing: 0.3px;
-  }
+        .site-row:hover {
+            background: #f5f5f5;
+            transform: translateX(5px);
+        }
 
-  .empty-state {
-    padding: 48px 20px; text-align: center; color: #999; font-size: 14px;
-  }
+        .site-row:last-child {
+            border-bottom: none;
+        }
 
-  footer {
-    padding: 12px; background: #fff; border-top: 1px solid #e5e5e5;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
+        .progress-bg {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #4CAF50 0%, #45a049 100%);
+            transition: width 0.4s ease;
+        }
 
-  button {
-    flex: 1;
-    padding: 10px; background: #fff; color: #d32f2f;
-    border: 1.5px solid #e5e5e5; border-radius: 8px; cursor: pointer;
-    font-size: 13px; font-weight: 600; transition: all 0.2s ease; font-family: inherit;
-  }
+        .favicon {
+            width: 18px;
+            height: 18px;
+            margin-right: 12px;
+            flex-shrink: 0;
+            border-radius: 2px;
+        }
 
-  button:hover { background: #fef5f5; border-color: #d32f2f; }
-  button:active { transform: scale(0.98); }
+        .domain {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-weight: 500;
+            font-size: 14px;
+            margin-right: 12px;
+            color: #2a2a2a;
+        }
 
-  #reports-btn {
-    color: #2a2a2a;
-    width: 100%;
-  }
-  #reports-btn:hover {
-    background: #f5f5f5;
-    border-color: #2a2a2a;
-  }
+        .time {
+            font-family: "Menlo", "Consolas", monospace;
+            font-size: 12px;
+            color: #555;
+            background: #f0f0f0;
+            padding: 4px 8px;
+            border-radius: 6px;
+            flex-shrink: 0;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
 
-  details {
-    width: 100%;
-    margin-top: 4px;
-  }
-  
-  summary {
-    font-size: 11px;
-    color: #999;
-    text-align: center;
-    cursor: pointer;
-    user-select: none;
-    padding: 4px;
-    outline: none;
-  }
-  summary:hover { color: #666; }
-  
-  #clear {
-    margin-top: 8px;
-    background: #fff;
-    border-color: #ffcdd2;
-    color: #d32f2f;
-    width: 100%;
-    font-size: 12px;
-    padding: 8px;
-  }
-  #clear:hover {
-    background: #ffebee;
-    border-color: #ef9a9a;
-  }
+        .empty-state {
+            padding: 48px 20px;
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+        }
 
-  .default-icon {
-    display: flex; align-items: center; justify-content: center;
-    background: #f0f0f0; border-radius: 4px;
-  }
-  .default-icon svg { width: 12px; height: 12px; fill: #666; }
+        footer {
+            padding: 12px;
+            background: #fff;
+            border-top: 1px solid #e5e5e5;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
 
-  .live-indicator {
-    width: 6px; height: 6px; background-color: #ff4444; border-radius: 50%;
-    margin-right: 8px; box-shadow: 0 0 4px rgba(255, 68, 68, 0.6);
-    animation: blink 1.5s ease-in-out infinite; display: none; 
-  }
+        button {
+            flex: 1;
+            padding: 10px;
+            background: #fff;
+            color: #d32f2f;
+            border: 1.5px solid #e5e5e5;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
 
-  .site-row.active-row { background: #f0fdf4; }
-  .site-row.active-row .live-indicator { display: inline-block; }
+        button:hover {
+            background: #fef5f5;
+            border-color: #d32f2f;
+        }
 
-  .site-row.active-row .time {
-    background: #ffffff; color: #2e7d32; border: 1px solid #a5d6a7;
-    font-weight: 700; box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
-    animation: pulse-green 2s infinite;
-  }
+        button:active {
+            transform: scale(0.98);
+        }
 
-  @keyframes pulse-green {
-    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
-    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(76, 175, 80, 0); }
-    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
-  }
+        #reports-btn {
+            color: #2a2a2a;
+            width: 100%;
+        }
 
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
+        #reports-btn:hover {
+            background: #f5f5f5;
+            border-color: #2a2a2a;
+        }
 
-  #detail-view, #reports-view, #filter-view {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: #fafafa;
-    transform: translateX(100%);
-    transition: transform 0.3s ease;
-    z-index: 20; display: flex; flex-direction: column;
-    overflow-y: auto;
-  }
+        details {
+            width: 100%;
+            margin-top: 4px;
+        }
 
-  body.viewing-details #report { transform: translateX(-30%); }
-  body.viewing-details #detail-view { transform: translateX(0); }
-  body.viewing-reports #report { transform: translateX(-30%); }
-  body.viewing-reports #reports-view { transform: translateX(0); }
-  body.viewing-filters #report { transform: translateX(-30%); }
-  body.viewing-filters #filter-view { transform: translateX(0); }
+        summary {
+            font-size: 11px;
+            color: #999;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+            padding: 4px;
+            outline: none;
+        }
 
-  .settings-content { padding: 20px; }
-  
-  .stat-card {
-    background: white; padding: 20px; border-radius: 8px; 
-    border: 1px solid #eee; margin-bottom: 20px; text-align: center;
-  }
-  
-  .big-text {
-    font-size: 24px; font-weight: 700; color: #2a2a2a; 
-    font-family: "Menlo", monospace; margin-top: 5px;
-  }
+        summary:hover {
+            color: #666;
+        }
 
-  .control-group {
-    margin-bottom: 20px; background: white; padding: 15px; 
-    border-radius: 8px; border: 1px solid #eee;
-  }
-  
-  .control-group label {
-    display: block; margin-bottom: 8px; font-weight: 500; font-size: 13px; color: #666;
-  }
-  
-  input[type="number"], textarea {
-    width: 100%; padding: 8px; border: 1px solid #ddd; 
-    border-radius: 4px; font-size: 14px; box-sizing: border-box;
-    font-family: inherit;
-  }
+        #clear {
+            margin-top: 8px;
+            background: #fff;
+            border-color: #ffcdd2;
+            color: #d32f2f;
+            width: 100%;
+            font-size: 12px;
+            padding: 8px;
+        }
 
-  textarea {
-    min-height: 120px;
-    resize: vertical;
-  }
+        #clear:hover {
+            background: #ffebee;
+            border-color: #ef9a9a;
+        }
 
-  .radio-group {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
+        .default-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f0f0;
+            border-radius: 4px;
+        }
 
-  .radio-option {
-    display: flex;
-    align-items: center;
-    padding: 10px;
-    border: 1.5px solid #e5e5e5;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
+        .default-icon svg {
+            width: 12px;
+            height: 12px;
+            fill: #666;
+        }
 
-  .radio-option:hover {
-    background: #f8f8f8;
-  }
+        .live-indicator {
+            width: 6px;
+            height: 6px;
+            background-color: #ff4444;
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 4px rgba(255, 68, 68, 0.6);
+            animation: blink 1.5s ease-in-out infinite;
+            display: none;
+        }
 
-  .radio-option input[type="radio"] {
-    margin-right: 10px;
-    cursor: pointer;
-    width: auto;
-  }
+        .site-row.active-row {
+            background: #f0fdf4;
+        }
 
-  .radio-option.selected {
-    background: #f0f0f0;
-    border-color: #2a2a2a;
-  }
+        .site-row.active-row .live-indicator {
+            display: inline-block;
+        }
 
-  .radio-label {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-  }
+        .site-row.active-row .time {
+            background: #ffffff;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
+            font-weight: 700;
+            box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+            animation: pulse-green 2s infinite;
+        }
 
-  .radio-label strong {
-    font-size: 14px;
-    color: #2a2a2a;
-  }
+        @keyframes pulse-green {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+            }
 
-  .radio-label small {
-    font-size: 12px;
-    color: #666;
-    margin-top: 2px;
-  }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 6px rgba(76, 175, 80, 0);
+            }
 
-  .info-text {
-    font-size: 12px;
-    color: #666;
-    margin-top: 5px;
-  }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+            }
+        }
 
-  .filter-count {
-    font-size: 11px;
-    color: #666;
-    background: #f0f0f0;
-    padding: 2px 8px;
-    border-radius: 10px;
-    margin-left: 8px;
-  }
+        @keyframes blink {
 
-  .primary-btn {
-    background: #2a2a2a; color: white; border: none; width: 100%; 
-    padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer;
-  }
-  .primary-btn:hover { background: #000; border-color: #000; }
+            0%,
+            100% {
+                opacity: 1;
+            }
 
-  #back-btn, #reports-back-btn, #filter-back-btn {
-    background: none; border: none; color: #666; font-size: 14px; 
-    cursor: pointer; padding: 8px; width: auto; margin-left: 8px;
-  }
-  #back-btn:hover, #reports-back-btn:hover, #filter-back-btn:hover { 
-    color: #2a2a2a; background: none; 
-  }
+            50% {
+                opacity: 0.4;
+            }
+        }
 
-  .site-row.limit-exceeded .progress-bg {
-    background: #ff4444;
-  }
-  
-  .site-row.limit-exceeded .time {
-    color: #d32f2f;
-    font-weight: 700;
-  }
+        #detail-view,
+        #reports-view,
+        #filter-view {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #fafafa;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
 
-  .report-section {
-    background: white;
-    border-radius: 8px;
-    border: 1px solid #eee;
-    margin-bottom: 20px;
-    overflow: hidden;
-  }
+        body.viewing-details #report {
+            transform: translateX(-30%);
+        }
 
-  .report-section h4 {
-    margin: 0;
-    padding: 15px;
-    background: #f8f8f8;
-    font-size: 14px;
-    font-weight: 600;
-    border-bottom: 1px solid #eee;
-  }
+        body.viewing-details #detail-view {
+            transform: translateX(0);
+        }
 
-  .report-item {
-    padding: 12px 15px;
-    border-bottom: 1px solid #f5f5f5;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
+        body.viewing-reports #report {
+            transform: translateX(-30%);
+        }
 
-  .report-item:last-child {
-    border-bottom: none;
-  }
+        body.viewing-reports #reports-view {
+            transform: translateX(0);
+        }
 
-  .report-date {
-    font-weight: 500;
-    color: #2a2a2a;
-  }
+        body.viewing-filters #report {
+            transform: translateX(-30%);
+        }
 
-  .report-time {
-    font-family: "Menlo", "Consolas", monospace;
-    font-size: 13px;
-    color: #555;
-    font-weight: 600;
-  }
+        body.viewing-filters #filter-view {
+            transform: translateX(0);
+        }
 
-  #filter-btn {
-    color: #2a2a2a;
-    width: 100%;
-  }
-  #filter-btn:hover {
-    background: #f5f5f5;
-    border-color: #2a2a2a;
-  }
-</style>
+        .settings-content {
+            padding: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .big-text {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2a2a2a;
+            font-family: "Menlo", monospace;
+            margin-top: 5px;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 13px;
+            color: #666;
+        }
+
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border: 1.5px solid #e5e5e5;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .radio-option:hover {
+            background: #f8f8f8;
+        }
+
+        .radio-option input[type="radio"] {
+            margin-right: 10px;
+            cursor: pointer;
+            width: auto;
+        }
+
+        .radio-option.selected {
+            background: #f0f0f0;
+            border-color: #2a2a2a;
+        }
+
+        .radio-label {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .radio-label strong {
+            font-size: 14px;
+            color: #2a2a2a;
+        }
+
+        .radio-label small {
+            font-size: 12px;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .info-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .filter-count {
+            font-size: 11px;
+            color: #666;
+            background: #f0f0f0;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 8px;
+        }
+
+        .primary-btn {
+            background: #2a2a2a;
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .primary-btn:hover {
+            background: #000;
+            border-color: #000;
+        }
+
+        #back-btn,
+        #reports-back-btn,
+        #filter-back-btn {
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 8px;
+            width: auto;
+            margin-left: 8px;
+        }
+
+        #back-btn:hover,
+        #reports-back-btn:hover,
+        #filter-back-btn:hover {
+            color: #2a2a2a;
+            background: none;
+        }
+
+        .site-row.limit-exceeded .progress-bg {
+            background: #ff4444;
+        }
+
+        .site-row.limit-exceeded .time {
+            color: #d32f2f;
+            font-weight: 700;
+        }
+
+        .report-section {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .report-section h4 {
+            margin: 0;
+            padding: 15px;
+            background: #f8f8f8;
+            font-size: 14px;
+            font-weight: 600;
+            border-bottom: 1px solid #eee;
+        }
+
+        .report-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f5f5f5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .report-item:last-child {
+            border-bottom: none;
+        }
+
+        .report-date {
+            font-weight: 500;
+            color: #2a2a2a;
+        }
+
+        .report-time {
+            font-family: "Menlo", "Consolas", monospace;
+            font-size: 13px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        #filter-btn {
+            color: #2a2a2a;
+            width: 100%;
+        }
+
+        #filter-btn:hover {
+            background: #f5f5f5;
+            border-color: #2a2a2a;
+        }
+    </style>
 </head>
+
 <body>
-  
-  <header>
-    <h3>
-      <span>Daily Activity</span>
-      <span class="total-time" id="totalTime"></span>
-    </h3>
-  </header>
-  
-  <div id="report"></div>
 
-  <footer>
-    <button id="reports-btn">Reports</button>
-    <button id="filter-btn">Filters <span class="filter-count" id="filter-count" style="display:none;"></span></button>
-    
-    <details>
-        <summary>Advanced Options</summary>
-        <button id="clear">Reset All Data</button>
-    </details>
-  </footer>
-
-  <div id="detail-view">
     <header>
-      <button id="back-btn">← Back</button>
-      <h3 id="detail-domain" style="padding: 16px 0; justify-content: center; margin-right: 50px;">
-        example.com
-      </h3>
+        <h3>
+            <span>Daily Activity</span>
+            <span class="total-time" id="totalTime"></span>
+        </h3>
     </header>
-    
-    <div class="settings-content">
-      <div class="stat-card">
-        <label>Time Today</label>
-        <div id="detail-time" class="big-text">0h 00m</div>
-      </div>
 
-      <div class="control-group">
-        <label>Daily Limit (minutes)</label>
-        <input type="number" id="limit-input" min="1" placeholder="e.g. 30">
-      </div>
+    <div id="report"></div>
 
-      <div class="control-group" style="display: flex; align-items: center; justify-content: space-between;">
-        <label for="block-check" style="margin-bottom: 0;">Block site after limit?</label>
-        <input type="checkbox" id="block-check" style="width: 20px; height: 20px; cursor: pointer;">
-      </div>
+    <footer>
+        <button id="reports-btn">Reports</button>
+        <button id="filter-btn">Filters <span class="filter-count" id="filter-count"
+                style="display:none;"></span></button>
 
-      <div class="control-group" style="display: flex; align-items: center; justify-content: space-between;">
-        <label for="track-check" style="margin-bottom: 0;">Track time on this site?</label>
-        <input type="checkbox" id="track-check" style="width: 20px; height: 20px; cursor: pointer;">
-      </div>
+        <details>
+            <summary>Advanced Options</summary>
+            <button id="clear">Reset All Data</button>
+        </details>
+    </footer>
 
-      <button id="save-limit" class="primary-btn">Save Settings</button>
-    </div>
-  </div>
+    <div id="detail-view">
+        <header>
+            <button id="back-btn">← Back</button>
+            <h3 id="detail-domain" style="padding: 16px 0; justify-content: center; margin-right: 50px;">
+                example.com
+            </h3>
+        </header>
 
-  <div id="reports-view">
-    <header>
-      <button id="reports-back-btn">← Back</button>
-      <h3 style="padding: 16px 0; justify-content: center; margin-right: 50px;">
-        Reports
-      </h3>
-    </header>
-    
-    <div class="settings-content">
-      <div class="report-section">
-        <h4>Daily Summary</h4>
-        <div id="daily-report"></div>
-      </div>
+        <div class="settings-content">
+            <div class="stat-card">
+                <label>Time Today</label>
+                <div id="detail-time" class="big-text">0h 00m</div>
+            </div>
 
-      <div class="report-section">
-        <h4>Monthly Summary</h4>
-        <div id="monthly-report"></div>
-      </div>
-    </div>
-  </div>
+            <div class="control-group">
+                <label>Daily Limit (minutes)</label>
+                <input type="number" id="limit-input" min="1" placeholder="e.g. 30">
+            </div>
 
-  <div id="filter-view">
-    <header>
-      <button id="filter-back-btn">← Back</button>
-      <h3 style="padding: 16px 0; justify-content: center; margin-right: 50px;">
-        Filters
-      </h3>
-    </header>
-    
-    <div class="settings-content">
-      <div class="control-group">
-        <label>Filter Mode</label>
-        <div class="radio-group">
-          <label class="radio-option" data-mode="all">
-            <input type="radio" name="filterMode" value="all" checked>
-            <span class="radio-label">
-              <strong>Track All Sites</strong>
-              <small>Track time on every website</small>
-            </span>
-          </label>
-          
-          <label class="radio-option" data-mode="include">
-            <input type="radio" name="filterMode" value="include">
-            <span class="radio-label">
-              <strong>Only Track These Sites</strong>
-              <small>Track only sites in the list below</small>
-            </span>
-          </label>
-          
-          <label class="radio-option" data-mode="exclude">
-            <input type="radio" name="filterMode" value="exclude">
-            <span class="radio-label">
-              <strong>Don't Track These Sites</strong>
-              <small>Track everything except sites in the list</small>
-            </span>
-          </label>
+            <div class="control-group" style="display: flex; align-items: center; justify-content: space-between;">
+                <label for="block-check" style="margin-bottom: 0;">Block site after limit?</label>
+                <input type="checkbox" id="block-check" style="width: 20px; height: 20px; cursor: pointer;">
+            </div>
+
+            <div class="control-group" style="display: flex; align-items: center; justify-content: space-between;">
+                <label for="track-check" style="margin-bottom: 0;">Track time on this site?</label>
+                <input type="checkbox" id="track-check" style="width: 20px; height: 20px; cursor: pointer;">
+            </div>
+
+            <button id="save-limit" class="primary-btn">Save Settings</button>
         </div>
-      </div>
-
-      <div class="control-group">
-        <label>Domain List</label>
-        <textarea id="filter-list" placeholder="youtube.com&#10;facebook.com&#10;twitter.com"></textarea>
-        <div class="info-text">Enter one domain per line (e.g., youtube.com)</div>
-      </div>
-
     </div>
-  </div>
 
-  <script src="popup.js"></script>
+    <div id="reports-view">
+        <header>
+            <button id="reports-back-btn">← Back</button>
+            <h3 style="padding: 16px 0; justify-content: center; margin-right: 50px;">
+                Reports
+            </h3>
+        </header>
+
+        <div class="settings-content">
+            <div class="report-section">
+                <h4>Daily Summary</h4>
+                <div id="daily-report"></div>
+            </div>
+
+            <div class="report-section">
+                <h4>Monthly Summary</h4>
+                <div id="monthly-report"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="filter-view">
+        <header>
+            <button id="filter-back-btn">← Back</button>
+            <h3 style="padding: 16px 0; justify-content: center; margin-right: 50px;">
+                Filters
+            </h3>
+        </header>
+
+        <div class="settings-content">
+            <div class="control-group">
+                <label>Filter Mode</label>
+                <div class="radio-group">
+                    <label class="radio-option" data-mode="all">
+                        <input type="radio" name="filterMode" value="all" checked>
+                        <span class="radio-label">
+                            <strong>Track All Sites</strong>
+                            <small>Track time on every website</small>
+                        </span>
+                    </label>
+
+                    <label class="radio-option" data-mode="include">
+                        <input type="radio" name="filterMode" value="include">
+                        <span class="radio-label">
+                            <strong>Only Track These Sites</strong>
+                            <small>Track only sites in the list below</small>
+                        </span>
+                    </label>
+
+                    <label class="radio-option" data-mode="exclude">
+                        <input type="radio" name="filterMode" value="exclude">
+                        <span class="radio-label">
+                            <strong>Don't Track These Sites</strong>
+                            <small>Track everything except sites in the list</small>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Domain List</label>
+
+                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                    <input type="text" id="domain-input" placeholder="Add domain (e.g. google.com)" style="flex: 1;">
+                    <button id="add-domain-btn"
+                        style="width: auto; padding: 8px 16px; background: #2a2a2a; color: white; border: none; border-radius: 4px;">Add</button>
+                </div>
+
+                <div id="chip-container"
+                    style="display: flex; flex-wrap: wrap; gap: 8px; min-height: 50px; padding: 8px; background: #f8f8f8; border-radius: 4px; border: 1px solid #eee;">
+                </div>
+
+                <div class="info-text">
+                    Matches subdomains automatically (e.g., "google.com" covers "mail.google.com")
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
 </body>
+
 </html>
