@@ -30,11 +30,34 @@ class TimeTracker {
         return `${year}-${month}-${day}`;
     }
 
+    async shouldTrackDomain(domain) {
+        const data = await this.storage.get(["filterMode", "filterList"]);
+        const mode = data.filterMode || "all";
+        const list = data.filterList || [];
+
+        if (mode === "all") return true;
+        
+        const isInList = list.includes(domain);
+        
+        if (mode === "include") return isInList;
+        if (mode === "exclude") return !isInList;
+        
+        return true;
+    }
+
     async saveCurrentTime() {
         if (!this.startTime || !this.currentTab) return;
 
-        const duration = Date.now() - this.startTime;
         const domain = this.getDomainName(this.currentTab.url);
+        
+        // Check if we should track this domain
+        const shouldTrack = await this.shouldTrackDomain(domain);
+        if (!shouldTrack) {
+            this.startTime = Date.now();
+            return;
+        }
+
+        const duration = Date.now() - this.startTime;
         const today = this.getTodayKey();
 
         const data = await this.storage.get(today);
@@ -72,6 +95,7 @@ class TimeTracker {
             browser.tabs.update(tab.id, { url: this.blockUrl });
         }
     }
+
     async handleTabChange(tabId) {
         await this.saveCurrentTime();
         try {

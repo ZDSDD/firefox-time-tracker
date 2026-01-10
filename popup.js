@@ -10,6 +10,7 @@ class PopupUI {
         this.saveBtn = document.getElementById("save-limit");
         this.limitInput = document.getElementById("limit-input");
         this.blockCheck = document.getElementById("block-check");
+        this.trackCheck = document.getElementById("track-check");
         this.detailDomain = document.getElementById("detail-domain");
         this.detailTime = document.getElementById("detail-time");
 
@@ -19,6 +20,14 @@ class PopupUI {
         this.reportsBackBtn = document.getElementById("reports-back-btn");
         this.dailyReport = document.getElementById("daily-report");
         this.monthlyReport = document.getElementById("monthly-report");
+
+        // Filter View Elements
+        this.filterView = document.getElementById("filter-view");
+        this.filterBtn = document.getElementById("filter-btn");
+        this.filterBackBtn = document.getElementById("filter-back-btn");
+        this.filterList = document.getElementById("filter-list");
+        this.saveFiltersBtn = document.getElementById("save-filters");
+        this.filterCount = document.getElementById("filter-count");
 
         this.interval = null;
         this.currentSite = null;
@@ -36,13 +45,47 @@ class PopupUI {
 
         if (this.reportsBtn) this.reportsBtn.addEventListener("click", () => this.openReports());
         if (this.reportsBackBtn) this.reportsBackBtn.addEventListener("click", () => this.closeReports());
+
+        if (this.filterBtn) this.filterBtn.addEventListener("click", () => this.openFilters());
+        if (this.filterBackBtn) this.filterBackBtn.addEventListener("click", () => this.closeFilters());
+        if (this.saveFiltersBtn) this.saveFiltersBtn.addEventListener("click", () => this.saveFilters());
+
+        // Radio button styling
+        document.querySelectorAll('.radio-option').forEach(option => {
+            option.addEventListener('click', () => {
+                const radio = option.querySelector('input[type="radio"]');
+                radio.checked = true;
+                this.updateRadioStyles();
+            });
+        });
+    }
+
+    updateRadioStyles() {
+        document.querySelectorAll('.radio-option').forEach(option => {
+            const radio = option.querySelector('input[type="radio"]');
+            if (radio.checked) {
+                option.classList.add('selected');
+            } else {
+                option.classList.remove('selected');
+            }
+        });
     }
 
     async update() {
         const today = this.getTodayKey();
-        const data = await browser.storage.local.get([today, "limits"]);
+        const data = await browser.storage.local.get([today, "limits", "filterMode", "filterList"]);
         const dailyUsage = data[today] || {};
         const viewData = { ...dailyUsage, limits: data.limits };
+
+        // Update filter count badge
+        const filterMode = data.filterMode || "all";
+        const filterList = data.filterList || [];
+        if (filterMode !== "all" && filterList.length > 0) {
+            this.filterCount.textContent = filterList.length;
+            this.filterCount.style.display = "inline";
+        } else {
+            this.filterCount.style.display = "none";
+        }
 
         let activeDomain = null;
         try {
@@ -79,7 +122,6 @@ class PopupUI {
             const emptyState = document.createElement("div");
             emptyState.className = "empty-state";
             emptyState.textContent = "No activity tracked yet.";
-            // If you want the line break:
             emptyState.appendChild(document.createElement("br"));
             emptyState.appendChild(document.createTextNode("Start browsing."));
             this.report.appendChild(emptyState);
@@ -88,7 +130,6 @@ class PopupUI {
             return;
         }
 
-        // Remove the empty state if it exists and we have data
         if (this.report.querySelector(".empty-state")) {
             this.report.innerHTML = "";
         }
@@ -111,7 +152,6 @@ class PopupUI {
     }
 
     upsertRow(site, ms, pct, isActive, limitMinutes) {
-        // Safe ID generation
         const safeSiteId = site.replace(/[^a-zA-Z0-9]/g, "-");
         const id = "row-" + safeSiteId;
         let row = document.getElementById(id);
@@ -165,16 +205,28 @@ class PopupUI {
         this.currentSite = site;
 
         const today = this.getTodayKey();
-        const data = await browser.storage.local.get([today, "limits", "blocking"]);
+        const data = await browser.storage.local.get([today, "limits", "blocking", "filterMode", "filterList"]);
         const dailyData = data[today] || {};
         const ms = dailyData[site] || 0;
         const limits = data.limits || {};
         const blocking = data.blocking || {};
+        const filterMode = data.filterMode || "all";
+        const filterList = data.filterList || [];
 
         this.detailDomain.textContent = site;
         this.detailTime.textContent = Utils.formatTime(ms);
         this.limitInput.value = limits[site] || "";
         this.blockCheck.checked = !!blocking[site];
+
+        // Set track checkbox based on filter mode and list
+        let isTracked = true;
+        if (filterMode === "include") {
+            isTracked = filterList.includes(site);
+        } else if (filterMode === "exclude") {
+            isTracked = !filterList.includes(site);
+        }
+        this.trackCheck.checked = isTracked;
+
         document.body.classList.add("viewing-details");
     }
 
@@ -187,9 +239,11 @@ class PopupUI {
     async saveLimit() {
         if (!this.currentSite) return;
         const limitVal = parseInt(this.limitInput.value);
-        const data = await browser.storage.local.get(["limits", "blocking"]);
+        const data = await browser.storage.local.get(["limits", "blocking", "filterMode", "filterList"]);
         const limits = data.limits || {};
         const blocking = data.blocking || {};
+        const filterMode = data.filterMode || "all";
+        const filterList = data.filterList || [];
 
         if (limitVal > 0) limits[this.currentSite] = limitVal;
         else delete limits[this.currentSite];
@@ -197,7 +251,37 @@ class PopupUI {
         if (this.blockCheck.checked) blocking[this.currentSite] = true;
         else delete blocking[this.currentSite];
 
-        await browser.storage.local.set({ limits, blocking });
+        // Handle track checkbox
+        const shouldTrack = this.trackCheck.checked;
+        
+        if (filterMode === "all") {
+            // If in "track all" mode and user unchecks tracking, switch to exclude mode
+            if (!shouldTrack) {
+                const newFilterList = filterList.includes(this.currentSite) ? filterList : [...filterList, this.currentSite];
+                await browser.storage.local.set({ limits, blocking, filterMode: "exclude", filterList: newFilterList });
+            } else {
+                await browser.storage.local.set({ limits, blocking });
+            }
+        } else if (filterMode === "include") {
+            // In include mode: checked = add to list, unchecked = remove from list
+            let newFilterList = [...filterList];
+            if (shouldTrack && !newFilterList.includes(this.currentSite)) {
+                newFilterList.push(this.currentSite);
+            } else if (!shouldTrack && newFilterList.includes(this.currentSite)) {
+                newFilterList = newFilterList.filter(d => d !== this.currentSite);
+            }
+            await browser.storage.local.set({ limits, blocking, filterList: newFilterList });
+        } else if (filterMode === "exclude") {
+            // In exclude mode: checked = remove from list, unchecked = add to list
+            let newFilterList = [...filterList];
+            if (!shouldTrack && !newFilterList.includes(this.currentSite)) {
+                newFilterList.push(this.currentSite);
+            } else if (shouldTrack && newFilterList.includes(this.currentSite)) {
+                newFilterList = newFilterList.filter(d => d !== this.currentSite);
+            }
+            await browser.storage.local.set({ limits, blocking, filterList: newFilterList });
+        }
+
         this.closeDetail();
     }
 
@@ -208,6 +292,42 @@ class PopupUI {
 
     closeReports() {
         document.body.classList.remove("viewing-reports");
+    }
+
+    async openFilters() {
+        document.body.classList.add("viewing-filters");
+        await this.loadFilters();
+    }
+
+    closeFilters() {
+        document.body.classList.remove("viewing-filters");
+    }
+
+    async loadFilters() {
+        const data = await browser.storage.local.get(["filterMode", "filterList"]);
+        const filterMode = data.filterMode || "all";
+        const filterList = data.filterList || [];
+
+        // Set radio button
+        const radio = document.querySelector(`input[name="filterMode"][value="${filterMode}"]`);
+        if (radio) radio.checked = true;
+        this.updateRadioStyles();
+
+        // Set textarea
+        this.filterList.value = filterList.join("\n");
+    }
+
+    async saveFilters() {
+        const selectedMode = document.querySelector('input[name="filterMode"]:checked').value;
+        const listText = this.filterList.value.trim();
+        const filterList = listText ? listText.split("\n").map(d => d.trim()).filter(d => d) : [];
+
+        await browser.storage.local.set({
+            filterMode: selectedMode,
+            filterList: filterList
+        });
+
+        this.closeFilters();
     }
 
     async loadReports() {
